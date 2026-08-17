@@ -43,6 +43,7 @@ style.textContent = `
 .upm-btn.danger { color:#fca5a5; }
 .upm-btn:disabled { opacity:.42; cursor:not-allowed; }
 .upm-notice { margin:8px 10px 0; padding:8px 9px; border-radius:7px; background:rgba(245,158,11,.11); color:#fcd34d; font-size:11px; }
+.upm-notice-link { margin-left:6px; padding:0; border:0; background:transparent; color:#fde68a; text-decoration:underline; cursor:pointer; font:inherit; }
 .upm-overlay { position:fixed; inset:0; z-index:100000; display:grid; place-items:center; padding:20px; background:rgba(0,0,0,.68); }
 .upm-dialog { width:min(620px,96vw); max-height:82vh; overflow-y:auto; overflow-x:hidden; border:1px solid #4b5563; border-radius:13px; background:#202124; color:#eee; box-shadow:0 24px 80px rgba(0,0,0,.55); }
 .upm-dialog-head { display:flex; align-items:center; gap:8px; padding:14px 16px; border-bottom:1px solid #3f3f46; }
@@ -136,6 +137,8 @@ class PluginPanel {
         this.checkingUpdates = false;
         this.busy = new Set();
         this.selectedUpdates = new Set();
+        this.updateFailures = [];
+        this.backgroundError = "";
         this.restartNeeded = localStorage.getItem("upm-restart-needed") === "1";
         this.processId = null;
         this.build();
@@ -206,12 +209,13 @@ class PluginPanel {
             if (checkRemote) await this.checkUpdates();
         } catch (error) {
             this.list.replaceChildren(el("div", "upm-empty", error.message));
-            notify(error.message, "error");
         }
     }
 
     async checkUpdates() {
         this.checkingUpdates = true;
+        this.updateFailures = [];
+        this.backgroundError = "";
         this.renderTabs();
         try {
             const payload = await request("/check-updates", { method: "POST", body: "{}" });
@@ -219,11 +223,9 @@ class PluginPanel {
             this.summary = payload.data.summary;
             const validIds = new Set(this.plugins.filter((item) => item.manageable && item.update_available).map((item) => item.id));
             this.selectedUpdates = new Set([...this.selectedUpdates].filter((id) => validIds.has(id)));
-            if (payload.data.failures.length) {
-                notify(`${payload.data.failures.length} 个仓库检查失败，其余结果已更新`, "error");
-            }
+            this.updateFailures = payload.data.failures;
         } catch (error) {
-            notify(`检查更新失败：${error.message}`, "error");
+            this.backgroundError = `自动检查更新未完成：${error.message}`;
         } finally {
             this.checkingUpdates = false;
             this.renderTabs();
@@ -243,9 +245,17 @@ class PluginPanel {
     render() {
         this.list.replaceChildren();
         const plugins = this.visiblePlugins();
-        this.notice.textContent = this.filter === "updatable"
+        const noticeText = this.filter === "updatable"
             ? "此处升级只更新插件项目代码，不会安装依赖。需要处理依赖时，请到 Git安装、非Git安装项目或全部栏目点击“更新依赖”。"
             : "升级、切换版本、安装依赖或删除后，可使用顶部“重新启动”让 ComfyUI 在当前命令行窗口内重启。";
+        this.notice.replaceChildren(document.createTextNode(noticeText));
+        if (this.updateFailures.length) {
+            const details = el("button", "upm-notice-link", `${this.updateFailures.length} 个仓库未能检查更新，查看详情`);
+            details.onclick = () => this.showUpdateCheckFailures();
+            this.notice.append(document.createElement("br"), details);
+        } else if (this.backgroundError) {
+            this.notice.append(document.createElement("br"), document.createTextNode(this.backgroundError));
+        }
         this.renderToolbar(plugins);
         if (!plugins.length) {
             this.list.append(el("div", "upm-empty", "没有符合条件的插件"));
@@ -315,7 +325,7 @@ class PluginPanel {
         copyName.type = "button";
         copyName.title = "复制项目名称";
         copyName.setAttribute("aria-label", `复制项目名称 ${plugin.name}`);
-        copyName.onclick = () => this.copyPluginName(plugin.name);
+        copyName.onclick = () => this.copyPluginName(plugin.name, copyName);
         const actions = el("div", "upm-actions");
         const isBusy = this.busy.has(plugin.id);
         if (plugin.manageable) {
@@ -342,7 +352,7 @@ class PluginPanel {
         return card;
     }
 
-    async copyPluginName(name) {
+    async copyPluginName(name, trigger) {
         try {
             if (navigator.clipboard?.writeText) {
                 await navigator.clipboard.writeText(name);
@@ -359,10 +369,29 @@ class PluginPanel {
                     textarea.remove();
                 }
             }
-            notify(`已复制项目名称：${name}`);
+            trigger.textContent = "✓";
+            trigger.title = "已复制";
+            setTimeout(() => {
+                trigger.textContent = "⧉";
+                trigger.title = "复制项目名称";
+            }, 1200);
         } catch (error) {
             notify(`复制失败：${error.message}`, "error");
         }
+    }
+
+    showUpdateCheckFailures() {
+        const dialog = modal("未能检查更新的仓库");
+        dialog.body.append(el("p", "upm-help", "这些项目本次未能连接远程仓库，其他项目的检查结果不受影响。"));
+        const list = el("div", "upm-result-list");
+        for (const item of this.updateFailures) {
+            const row = el("div", "upm-result-row");
+            const main = el("span", "upm-result-main");
+            main.append(el("span", "upm-result-name", item.name), el("span", "upm-result-meta", item.message));
+            row.append(main);
+            list.append(row);
+        }
+        dialog.body.append(list);
     }
 
     async batchUpdateSelected() {
