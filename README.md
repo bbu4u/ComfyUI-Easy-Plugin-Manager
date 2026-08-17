@@ -1,70 +1,102 @@
-# ComfyUI Universal Plugin Manager
+# ComfyUI Easy Plugin Manager
 
-一个不依赖 ComfyUI Registry 登记信息的本地插件管理器。它直接扫描 ComfyUI 配置的全部 `custom_nodes` 路径，并根据插件目录本身是否为完整 Git 仓库进行分类。
+一个简单、直观的 ComfyUI 插件管理器。无论插件是通过其他管理器、Git 命令还是压缩包安装，都可以在同一个页面中查看和管理。
 
-## 一期功能
+如果你的 `custom_nodes` 中已经积累了很多来源不同的插件，ComfyUI Easy Plugin Manager 可以帮你统一完成更新、版本切换、依赖安装、Git 转换和安全删除。
 
-- 搜索全部插件，并按“可更新、Git 安装、非 Git 安装项目、全部”四个栏目展示数量。
-- 可管理插件：安全升级、切换分支/标签/最近提交、打开仓库网页、移入回收站。
-- 不可管理插件：按“插件名 + github”打开浏览器搜索、绑定 GitHub 仓库并迁移为 Git 管理、移入回收站。
-- 插件名称也可点击：Git 项目打开仓库网页，非 Git 项目直接搜索对应的 GitHub 项目。
-- 项目名称右侧提供复制图标，可直接复制完整目录名称。
-- “可更新”栏目支持逐项勾选、全选和批量更新，单个失败不会中断其他插件。
-- “非 Git”栏目支持批量检测名称明确匹配的 GitHub 仓库，并将用户勾选的项目一次性备份、转换为 Git 管理并克隆最新版本。
-- 支持输入 GitHub 仓库地址安装新插件，并使用 ComfyUI 当前 Python 环境自动安装根目录 `requirements.txt` 中的依赖。
-- 安装新插件时可取消“同时安装依赖包”；默认启用。
-- Git 安装、非 Git 安装项目和全部栏目提供独立的“更新依赖”操作；可更新栏目只更新项目代码，并明确提示依赖需单独处理。
-- 执行需要重启的操作后显示“重新启动”按钮，使用当前 Python 和启动参数在原命令行窗口中重启 ComfyUI。
-- 迁移前自动完整备份原目录。
-- 升级仅允许 fast-forward；列表不因本地修改改变颜色或阻止操作。
-- 存在本地修改时，升级会二次确认；确认后先把修改（含未跟踪文件）保存到 Git stash，再执行更新。
-- 存在本地修改时，切换版本会二次确认并把修改（含未跟踪文件）保存到 Git stash。
-- 未跟踪的 `__pycache__`、`.pyc`、`.pyo` 和常见系统缓存文件不会被误判为本地修改。
-- 每次升级或切换版本前创建 `refs/upm/backups/*` Git 引用。
-- 不直接永久删除文件。
+## 主要功能
 
-## 安装
+### 统一查看所有插件
 
-将整个 `ComfyUI-Universal-Plugin-Manager` 文件夹复制到：
+- 自动扫描 ComfyUI 配置的全部 `custom_nodes` 目录。
+- 按“可更新、Git安装、非Git安装项目、全部”分类展示。
+- 支持按名称搜索，并可一键复制项目名称。
+- 点击 Git 项目名称可打开仓库页面；非 Git 项目可直接搜索对应的 GitHub 项目。
 
-```text
-ComfyUI/custom_nodes/ComfyUI-Universal-Plugin-Manager
+### 更新和版本管理
+
+- 检查 Git 插件是否有新版本。
+- 支持单个更新、多选更新和一键全选更新。
+- 可切换分支、标签或最近提交，方便升级、降级和测试旧版本。
+- 检测到本地修改时会先提示并安全保存，避免临时修改意外丢失。
+
+### 安装插件和依赖
+
+- 输入 GitHub 仓库地址即可安装新插件。
+- 安装时可选择是否同时安装依赖，默认开启。
+- 已安装项目可单独执行“更新依赖”。
+- 依赖只会安装到 ComfyUI 当前使用的便携 Python 或虚拟环境，不会写入系统全局 Python。
+
+### 管理非 Git 插件
+
+- 自动检测名称匹配的 GitHub 仓库。
+- 清楚列出已找到和未找到的项目。
+- 可勾选多个项目，一次转换为 Git 管理并获取最新版本。
+- 自动匹配只提供候选结果，转换前由用户确认。
+
+### 删除和重新启动
+
+- 删除插件时先移入管理器回收站，避免误删后无法恢复。
+- 执行更新、安装、删除等操作后，可直接从页面重新启动 ComfyUI。
+- Windows 便携版重启时保持原命令行窗口打开。
+
+## 安装方法
+
+### 使用 Git 安装（推荐）
+
+进入 ComfyUI 的 `custom_nodes` 目录并执行：
+
+```bash
+git clone https://github.com/bbu4u/ComfyUI-Easy-Plugin-Manager.git
 ```
 
-重启 ComfyUI。左侧边栏将出现“🧩 插件管理”。
+目录结构应为：
 
-项目本身不需要额外 Python 依赖，但系统必须能执行 `git`。
+```text
+ComfyUI/custom_nodes/ComfyUI-Easy-Plugin-Manager
+```
+
+### 使用压缩包安装
+
+1. 在 GitHub 页面点击 **Code → Download ZIP**。
+2. 解压到 `ComfyUI/custom_nodes`。
+3. 确保插件代码直接位于一个独立文件夹内，不要多嵌套一层目录。
+
+安装完成后重启 ComfyUI。左侧边栏会出现“🧩 插件管理”。
+
+> 使用更新、版本切换和 Git 转换功能前，请确保系统已经安装 Git，并且命令行可以执行 `git`。
+
+## 快速使用
+
+1. 打开左侧边栏的“插件管理”。
+2. 等待管理器扫描插件并检查更新。
+3. 在顶部栏目之间切换，或使用搜索框查找项目。
+4. 点击项目右侧按钮执行升级、版本切换、依赖安装、Git 转换或删除。
+5. 页面出现“重新启动”后，等待当前任务结束，再点击按钮让修改生效。
+
+升级插件只更新项目代码，不会自动更新依赖。如果新版插件调整了依赖，请前往“Git安装”或“全部”栏目，点击该项目的“更新依赖”。
 
 ## 数据安全
 
-- 删除的插件保存在 `ComfyUI/user/universal_plugin_manager/trash`。
-- 迁移前的原插件保存在 `ComfyUI/user/universal_plugin_manager/backups`。
-- GitHub 自动检测优先读取插件自身元数据，并使用 ComfyUI-Manager 公共插件目录补充匹配；模糊或多候选结果不会自动转换。
-- 管理器自身禁止从界面删除或迁移。
-- 符号链接和 Windows 目录联接一期只展示，不允许修改。
-- 操作参数通过固定参数数组传递给 Git，不使用 shell 拼接。
-- 依赖只允许安装到 ComfyUI 当前虚拟环境或便携版 `python_embeded`，检测到系统全局 Python 时会拒绝执行。
-- 修改类接口默认只接受来自 `127.0.0.1` / `::1` 的请求；通过局域网访问时只能查看列表。
+- 删除的插件会移入 `ComfyUI/user/universal_plugin_manager/trash`。
+- 转换为 Git 管理前，原插件会备份到 `ComfyUI/user/universal_plugin_manager/backups`。
+- 存在本地修改时，更新或切换版本前会提示确认并安全暂存修改。
+- 同名插件目录已存在时，安装操作不会覆盖原目录。
+- 自动检测到的 GitHub 仓库需要用户勾选确认后才会执行转换。
+- 管理器自身不能从界面删除或转换。
 
-## 一期限制
+## 使用须知
 
-- 不自动安装、卸载或回退 Python 依赖。
-- 不执行插件自己的 `install.py` 或 `uninstall.py`。
-- 自动依赖安装只处理根目录 `requirements*.txt` 和 `requirements/*.txt`，使用当前 ComfyUI Python 执行隔离模式 pip，不会自动执行插件提供的脚本。
-- 只支持把普通目录迁移到 GitHub 仓库；单文件插件暂不能迁移。
-- 切换代码版本后，若依赖也发生变化，需要手动重新安装该插件的 `requirements.txt`。
-- 操作完成后需要重启 ComfyUI 才能完全生效。
+- 管理器不会运行插件提供的 `install.py` 或 `uninstall.py`。
+- 自动依赖安装会识别项目中常见的 requirements 依赖文件。
+- 单文件插件可以查看和删除，但不能直接转换为独立 Git 项目。
+- 切换到标签或指定提交后，需要切回分支才能继续普通升级。
+- 代码或依赖发生变化后，通常需要重新启动 ComfyUI 才能完全生效。
 
-## 开发测试
+## 完整操作说明
 
-```powershell
-python -m unittest discover -s tests -v
-```
-
-## 操作说明
-
-完整使用方法请参阅 [USER_GUIDE.md](USER_GUIDE.md)，包含插件安装、批量更新、依赖安装、版本切换、非 Git 转换、删除恢复和页面重启操作。
+需要了解批量更新、依赖处理、版本恢复、非 Git 转换或回收站恢复时，请阅读 [中文操作说明](USER_GUIDE.md)。
 
 ## License
 
-MIT
+[MIT License](LICENSE)
