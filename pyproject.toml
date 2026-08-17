@@ -1,0 +1,11 @@
+[project]
+name = "comfyui-universal-plugin-manager"
+version = "0.5.1"
+description = "Registry-independent Git manager for all ComfyUI custom nodes"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+
+[tool.comfy]
+PublisherId = "local"
+DisplayName = "Universal Plugin Manager"
+Icon = ""

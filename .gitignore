@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+tests/_runtime/
+tests/.tmp/
+.upm-tests-*/
+.catalog-check/
+.DS_Store
+Thumbs.db
+desktop.ini
